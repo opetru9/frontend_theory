@@ -41,3 +41,9 @@ Motoarele de căutare folosesc această descriere în rezultatele căutărilor, 
 # difenrenta dintre section si article?
 <section>: Folosit pentru a organiza conținut pe teme sau subiecte, în cadrul aceleiași pagini sau document. Este mai mult despre structura internă și organizarea conținutului.
 <article>: Folosit pentru a defini conținut independent, care are sens pe cont propriu și poate fi reutilizat sau distribuit în alte contexte.
+
+#<del> si <ins>
+<del> va aparea cu o linie pe centru -> taiat
+<ins> este folosit pentru a marca textul nou introdus într-o pagină și este util pentru SEO, accesibilitate și claritate în modificările unui document.
+ex:
+<p>Oferta anterioară: <del>100€</del> <ins>90€</ins></p>
