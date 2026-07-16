@@ -345,3 +345,41 @@ numarul setat ca tabindex va arata ordinea obiectului care va avea focus dupa ap
     console.log(now.getSeconds());  // Secunde (0-59)
 
 - UTC - Coordinated Universal Time
+
+# Window.matchMedia ( Cum este afișată aplicația )
+* e folosit ca sa verificam prin js daca un cod css corespunde cu acela la momentul folosirii proiectului , returneaza un obiect : {
+  matches: boolean,
+  media: string,
+  addEventListener(),
+  removeEventListener()
+}
+
+- deci pentru verificare folosim : window.matchMedia("(display-mode: standalone)").matches => reurneaza un boolean 
+
+# window.navigator ( Cine rulează această pagină și ce știe să facă? )
+* nu tine cont de UI sau DOM , doar de environment ; ex: language la browser sau geo , sau device platform
+
+# window.location
+window.location.protocol // https:
+window.location.host     // example.com:8080
+window.location.hostname // example.com
+window.location.port     // 443
+window.location.pathname // /page/index.html
+window.location.search   // ?id=10
+window.location.hash     // #section1
+
+# Abstract class
+* clasa suprema care nu poati fi decalrat prin new ca usual clas , poate fi doar extinsa de alte clase , deci e desupra la un grup de clase si :
+1.nu poate fi folosită direct
+2.este făcută ca alte clase să o extindă
+3.poate impune reguli pentru clasele copil
+    AbstractPage
+        ├── LoginPage
+        ├── HomePage
+        └── CartPage
+
+* Acces Modifiers:
+1. protected Poate fi folosit d eclasa curenta si clasa care o extinde -> protected page: Page
+2. public -> Oricine poate accesa proprietatea.
+3. private -> Doar clasa însăși poate accesa proprietatea.
+4. readonly -> you set it once and can never modify it like const 
