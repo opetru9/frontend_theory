@@ -1,0 +1,92 @@
+{
+  "lastUpdated": "2026-07-20",
+  "newLessons": [
+    {
+      "topic": "enum vs type — runtime materialization",
+      "summary": "Replaced `type ServerOption = \"APP\"|\"DO\"|\"OVH\"` with `enum ServerOption { APP=\"APP\", DO=\"DO\", OVH=\"OVH\" }`. Verified in compiled scripts.js that enum produces a real object at runtime, unlike type which leaves zero trace.",
+      "compiledOutput": "let ServerOption;\n(function (ServerOption) {\n  ServerOption[\"APP\"] = \"APP\";\n  ServerOption[\"DO\"] = \"DO\";\n  ServerOption[\"OVH\"] = \"OVH\";\n})(ServerOption || (ServerOption = {}));",
+      "keyFacts": [
+        "The `ServerOption || (ServerOption = {})` guard exists for declaration merging — if the same enum name is reopened in another block, it reuses the existing object instead of overwriting it (protects properties already added by a prior block).",
+        "A numeric enum (no explicit values: `APP, DO, OVH`) would auto-number 0/1/2 instead of strings — verified this would break both `Record<ServerOption,string>` (needs string keys) and `mySelect.value as ServerOption` (the HTML <option value=\"APP\"> always yields a string). Explicit string values are required here for that reason, not style.",
+        "Style-guide takeaway: enum generates real runtime code on every compile; plain union `type` is free. Many TS style guides prefer union literals over enum for exactly this reason when the runtime object isn't actually needed."
+      ]
+    },
+    {
+      "topic": "const enum — TypeScript 7 breaking change (verified empirically)",
+      "summary": "Tried `const enum ServerOption` expecting inlined literal values with zero runtime object (classic tsc behavior). Result: identical output to plain `enum`, no inlining occurred.",
+      "experimentSteps": [
+        "Changed enum -> const enum, rebuilt: IIFE object still present, unchanged.",
+        "Hypothesized `isolatedModules: true` was blocking inlining (a real, documented restriction — but only for AMBIENT/cross-file const enums). Disabled it, rebuilt again: still no change — hypothesis rejected by direct test.",
+        "Confirmed via web search: TypeScript 7's new native (Go-rewritten) compiler intentionally removed const enum inlining altogether, even for single-file, no-import usage — done deliberately so single-file transpilers (Babel/esbuild-style tools) never silently produce broken output. This is documented as one of the most likely breaking changes when migrating to TS 7."
+      ],
+      "conclusion": "On typescript@7.0.2, `const enum` and `enum` compile identically — no benefit to `const enum` in this or any project on this compiler version. Reverted to plain `enum`, restored `isolatedModules: true`.",
+      "sources": [
+        "https://typescript.tv/best-practices/why-typescript-enums-are-dead/",
+        "https://medium.com/@onix_react/highlights-from-typescript-7-0-beta-d0be66d5b0bc"
+      ]
+    },
+    {
+      "topic": "interface vs type — and the type-space/value-space pitfall",
+      "summary": "Attempted rewriting `serverDomains: Record<ServerOption,string>` as an `interface`. First attempt wrote the real domain values as literal types AND deleted the actual runtime object (commented out the old `let serverDomains = {...}`).",
+      "errorHit": "TS2693: 'serverDomains' only refers to a type, but is being used as a value here.",
+      "keyFacts": [
+        "An interface/type only exists in type-space — pure compile-time shape description, holds no data. A separate real object (value-space) is always still required, typed BY the interface, not replaced by it.",
+        "Interface property values must be general types (e.g. `string`), not the actual literal data — writing the real value as the type technically compiles (creates a literal type) but wrongly locks the property to that one exact string forever.",
+        "Naming convention: type/interface names use PascalCase (`ServerDomains`) to avoid visually colliding with a same-named variable (`serverDomains`) — TS allows the collision technically (types and values live in separate namespaces) but it's confusing style.",
+        "interface supports declaration merging (like enum); type does not — redeclaring the same type name is a compile error.",
+        "interface can only describe object/class shapes; type can also do unions, primitives, tuples, function signatures — strictly more versatile for anything beyond plain object shape."
+      ]
+    },
+    {
+      "topic": "Record<K,V> vs a hand-written interface — trade-off, decided in favor of Record",
+      "summary": "User independently observed the interface version was more verbose than Record. Confirmed the deeper reason: a hand-written interface loses the automatic link to the ServerOption union that Record has.",
+      "consequence": "If a 4th ServerOption were added later, Record<ServerOption,string> would force a matching key immediately (compile error if missed); a manually-written interface would NOT catch this — it would silently stay out of sync.",
+      "decision": "Kept `Record<ServerOption, string>` for serverDomains; did not replace with interface. User's general takeaway: default to `type` over `interface` for personal-scale projects, since type is a strict superset for object shapes. Validated as reasonable, with the caveat that interface earns its place in larger codebases (ambient/third-party type augmentation via declaration merging, extends readability, marginal compile-perf at scale)."
+    },
+    {
+      "topic": "typeof / keyof — bridging value-space back to type-space (discussed, not applied)",
+      "summary": "User asked whether a plain runtime object (no type/enum) could be used directly as Record's key argument.",
+      "answer": "No — mirror error of the interface pitfall: 'X refers to a value, but is being used as a type here' (TS2749). Record's first argument must be type-space.",
+      "bridge": "`keyof typeof someRuntimeObject` derives a union type FROM existing data, when you want the type to follow the value instead of declaring both separately. Not applied in this codebase — flagged as a future exploration idea."
+    },
+    {
+      "topic": "readonly + Readonly<T>, and how it differs from const",
+      "summary": "Applied `Readonly<Record<ServerOption, string>>` to serverDomains. Verified with an intentional test line that mutating a property now fails to compile.",
+      "verifiedError": "TS2540: Cannot assign to 'APP' because it is a read-only property.",
+      "keyFacts": [
+        "`const` blocks reassigning the VARIABLE BINDING (`serverDomains = {...}` again) — it says nothing about the object's own properties.",
+        "`readonly` blocks reassigning INDIVIDUAL PROPERTIES on the object (`serverDomains.APP = \"x\"`) — it says nothing about the variable binding itself.",
+        "They protect different things and compose: `const serverDomains: Readonly<Record<...>> = {...}` blocks both at once.",
+        "Like everything in TS, readonly is compile-time only — it does not call Object.freeze() or enforce anything at actual runtime."
+      ],
+      "openItem": "serverDomains is still declared with `let`, not yet switched to `const` — left as a deliberate stopping point, purely cosmetic/optional, not a bug."
+    },
+    {
+      "topic": "2026-07-20 — new project: converting d:/tools/scraper (Puppeteer FB-ads scraper) from JS to TS",
+      "summary": "First full TS session on a second, separate project — a plain JS/ESM Node script (get-fb-data.js) with zero prior TS setup. Installed typescript + @types/node, generated tsconfig via `npx tsc --init`, renamed to .ts, resolved all compiler errors to zero, then added explicit return-type and generic-type annotations.",
+      "keyFacts": [
+        "`tsc --init`'s modern default already picked `module`/`moduleResolution: nodenext` and `target: esnext` correctly for a Node ESM project with top-level await, with no manual adjustment needed.",
+        "`tsc --init` left `\"types\": []` by default — this disables auto-inclusion of ALL @types/* packages, not just unwanted ones. With @types/node installed but not listed, `import fs from \"fs\"` would fail to resolve types entirely (`Cannot find module 'fs'...`). Fixed via `\"types\": [\"node\"]` (the init template itself hints this in a comment).",
+        "Confirmed the `types` tsconfig field only governs @types/* (DefinitelyTyped) packages — it has zero effect on packages shipping their own bundled .d.ts (e.g. puppeteer), which resolve normally regardless of what's in that array.",
+        "Optional properties (`?`) finally got a natural fit (closes the queuedNext item from the prior session): the per-card `entry` object accumulates fields conditionally (`if (avatarElement) entry.avatarSrc = ...`), so `type AdEntry = { avatarSrc?: string; ... }` needed every field optional — without `?`, even `const entry: AdEntry = {}` fails to compile (all non-optional fields would be required immediately). User applied `?` on their own, unprompted — first time new-to-them syntax was self-discovered rather than needing the short-intro-first exception.",
+        "`noUncheckedIndexedAccess` (on by default from tsc --init's stricter option set) types `arr[i]` as `T | undefined`, since TS can't statically prove a numeric loop index stays in bounds. Fixed with `if (!card) continue;` right after `const card = cards[i]` — user recognized this as the same guard-before-use pattern already used elsewhere in the file for optional Puppeteer element handles (`if (avatar) {...}`).",
+        "`catch (error)` is typed `unknown` under `strict` (via `useUnknownInCatchVariables`). Fixed with `if (error instanceof Error) { ...error.message } else { ...error }` — user recalled this exact pattern unprompted from their other project (`d:\\OP-link-generator`).",
+        "Re-verified empirically (second project, same conclusion as before): diffing the .ts source against the compiled .js showed `type AdEntry = {...}` and every `: AdEntry` annotation vanish completely — zero runtime trace, confirming type erasure, in contrast to what an `enum` would leave behind.",
+        "Async functions always resolve wrapped in `Promise<T>` at runtime, even when the body just does `return someValue`. Applied `Promise<AdEntry[]>` as the explicit return type on `getFacebookAdsData`.",
+        "For an async function with no meaningful return value, the correct annotation is `Promise<void>`, NOT `Promise<null>` — `void` means 'no return value to care about' and matches the real runtime resolution of `undefined`; `null` would wrongly imply the function intentionally resolves to the value null.",
+        "`Set<T>` is generic just like `Promise<T>` — typed `processedCards` as `Set<string>`, reasoning traced from what's actually `.add()`-ed into it (`uniqueKey`, built from a template literal, which is always `string`). Learned both equivalent styles: `const x: Set<string> = new Set()` (contextual typing infers the constructor's generic from the annotation) and `const x = new Set<string>()` (generic on the constructor itself, more common style)."
+      ],
+      "sessionOutcome": "Compiles clean (zero tsc errors) at end of session. Not yet functionally re-tested by actually running the scraper (`npm start`) end-to-end against live Facebook — deferred to next session."
+    }
+  ],
+  "mentorNotesAdditions": {
+    "teachingStyleCorrection": "Socratic-only questioning works when a new concept can be bridged from something the user already knows (enum bridged from prior type/IIFE knowledge). For entirely new syntax never seen before (interface, first exposure), user explicitly asked for a short direct intro BEFORE being questioned — pure guessing produced frustration, not learning. New rule: brand-new syntax gets a short intro first, then a question to apply it; prior-knowledge-adjacent concepts still open with a Socratic question.",
+    "teachingStyleCorrection2_2026-07-20": "Refined further: never Socratically quiz on exact CLI/command syntax (npm flags, npx invocations, etc.) — user said explicitly 'niciodata nu le memorizez' (I never memorize these) after 3 failed guesses at `npm install -D typescript @types/node`. Give commands directly, always. Also: if a Socratic question on a basic JS control-flow keyword (e.g. `continue`) stalls for 2+ turns without landing, stop drilling and just give the direct answer — command-syntax and rarely-used-keyword recall both seem to produce friction without learning benefit, unlike genuine TS/JS concept questions (types, narrowing, interface vs type, generics) which the user engages well with Socratically.",
+    "newCommonMistake": "Conflating a type/interface DECLARATION with the actual VALUE — writing real data as literal types inside an interface, and/or deleting the runtime object once a type for it exists (type-space vs value-space confusion)."
+  },
+  "queuedNext": [
+    "Cosmetic: switch `let serverDomains` to `const serverDomains` now that Readonly<> is applied. (other project — ServerOption file)",
+    "Run `npm start` on the scraper once, to functionally confirm the TS conversion didn't change runtime behavior. (scraper project)",
+    "Ideas floated but not started yet: `readonly` on `AdEntry` fields, `as const` on the selector string constants. (scraper project)"
+  ]
+}

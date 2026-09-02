@@ -85,9 +85,19 @@
     * Dacă lucrați cu indici negativi sau dacă există posibilitatea ca primul argument să fie mai mare decât al doilea, slice() oferă mai multă flexibilitate.
     * Dacă doriți să vă asigurați că indicii sunt întotdeauna pozitivi și că rezultatul este întotdeauna consistent, substring() poate fi o opțiune mai sigură.
 - "hello".substring(2,5) - extrage caractere in baza indicilor / "llo" /. mai strict
-- "hello".split(",")
-- "hello".trim() - elimina spatiile albe
+- "hello".split(",") or more rules writen using regex () vvv
+* regex - regular expersion  - Se folosește peste tot unde ai nevoie să CAUȚI, SEPARI, sau ÎNLOCUIEȘTI text bazat pe o FORMĂ, nu pe o valoare exactă cunoscută dinainte, nu-i specific JavaScript-ului — e un concept folosit în aproape orice limbaj de programare (Python, Java, etc.)
+ex: /[/n,]/+ -> separa dupa /n sau , chair daca sunt citeva la rind (+)
+ / ... / - delimatatori
+ [ ... ] - un set de caractere posibile - ORICARE UN SINGUR caracter dintre cele listate aici înăuntru
+ \n - linie noua 
+ [ ... ]+ - plus dupa paranteze e una sau mai multe repetari -> adica daca sunt ,, sau /n/n se socaote ca o limitare 
+- "hello".trim() - elimina spatiile albe peste tot 
+- "hello".trimEnd() - elimina spatiile goale doar la sfirsitul stringului 
+- "hello".trimStart() - elimina spatiile goale doar la inceputul stringului 
 - "hello".repeat(3) - / "hellohellohello"
+
+
 
 # metode Array
 - .forEach - se foloseste pentru a gasi un element anume din masiv sau pentru a primi oricare informatie depsre masiv, nu returneaza nimic
@@ -383,3 +393,15 @@ window.location.hash     // #section1
 2. public -> Oricine poate accesa proprietatea.
 3. private -> Doar clasa însăși poate accesa proprietatea.
 4. readonly -> you set it once and can never modify it like const 
+
+# Immediately Invoked Function Expression (IIFE)
+*  o funcție definită și apelată pe loc, nu memorată undeva ca să fie chemată mai târziu.
+* (function() { ... })() parantezele din jurul funcției o transformă în expresie, iar parantezele de la final o invocă imediat.
+
+# new Set() 
+* o colectie de date unice in js , vine din js , e similar cu array doar ca daca adaogi acelasi valori ele se suprascriu si in final nu ai dublicate
+* 
+.add(valoare) — adaugă o valoare
+.has(valoare) — verifică dacă există deja
+.size — câte elemente unice conține (proprietate, nu metodă)
+

@@ -1,0 +1,116 @@
+{
+  "project": "link_generator",
+  "purpose": "First hands-on TypeScript practice project — migrated a vanilla JS link generator tool to TypeScript",
+  "lastUpdated": "2026-07-16",
+  "lessons": [
+    {
+      "topic": "TypeScript is compile-time only",
+      "summary": "Browsers cannot run .ts files at all. TypeScript is a separate compiler (tsc) that reads .ts source, checks types statically, then deletes all type annotations and writes plain .js. Only the compiled .js is ever shipped/deployed/run — the .ts source and the whole TS toolchain never reach end users.",
+      "keyFacts": [
+        "Type annotations (e.g. ': string', ': void') are completely ERASED at compile time — they produce zero runtime code and zero runtime checks.",
+        "Verification happens once, when you run `tsc` / `npm run build` — never while the code is actually running.",
+        "Non-null assertions (!) and type assertions (as Type) are just promises made to the compiler — they generate no real runtime check; if wrong, you still get a runtime crash, TS just stops warning you about it at compile time."
+      ]
+    },
+    {
+      "topic": "Project setup",
+      "summary": "How to add TypeScript tooling to an existing vanilla JS project.",
+      "steps": [
+        "npm init -y  → creates package.json",
+        "npm install --save-dev typescript  → installs TS locally (devDependency), not globally, so the exact version is pinned per-project via package-lock.json",
+        "npx tsc --init  → generates tsconfig.json",
+        "Add \"build\": \"tsc\" under package.json's \"scripts\", then run with npm run build",
+        "Add node_modules to .gitignore (regenerable from package.json + package-lock.json, shouldn't be committed)",
+        "Rename scripts.js → scripts.ts; index.html keeps pointing at scripts.js (the compiled OUTPUT), never at scripts.ts"
+      ]
+    },
+    {
+      "topic": "Null safety (document.getElementById)",
+      "summary": "document.getElementById() returns HTMLElement | null in TS, because the compiler can't know at compile time whether an element with that ID really exists in the HTML.",
+      "options": [
+        "Non-null assertion: document.getElementById('x')! — tells the compiler 'trust me, not null'. No runtime check. Chosen for this project: small personal project, both files controlled by the same person.",
+        "Safer alternative: if (!el) throw new Error(...) — actually checks at runtime too, better for team/production code."
+      ]
+    },
+    {
+      "topic": "Type assertions (as Type)",
+      "summary": "document.getElementById() returns the generic HTMLElement type, which lacks properties like .value that only exist on specific subtypes.",
+      "example": "const input = document.getElementById('myInput')! as HTMLInputElement;",
+      "syntaxRule": "`as Type` goes right after the EXPRESSION whose type you're asserting, never next to the variable name on the left of `=`."
+    },
+    {
+      "topic": "Union type literals + type alias",
+      "summary": "Restrict a value to an exact fixed set of string values instead of the generic `string` type, catching typos at compile time instead of causing silent runtime bugs.",
+      "example": "type ServerOption = \"APP\" | \"DO\" | \"OVH\";\nlet mySelectValue = mySelect.value as ServerOption;",
+      "verifiedBehavior": "Deliberately introducing a typo (e.g. case \"OHV\":) produced compiler error ts(2678): 'Type is not comparable to type ServerOption' — proven the union catches mistakes that plain `string` would silently accept."
+    },
+    {
+      "topic": "type alias — general uses",
+      "summary": "`type Name = ...` always creates a type alias — a reusable name for ANY type, not just unions.",
+      "commonUses": [
+        "Union types: type ServerOption = \"APP\" | \"DO\" | \"OVH\";",
+        "Object shapes: type User = { name: string; age: number };",
+        "Function signatures: type ClickHandler = () => void;",
+        "Primitive aliasing for documentation: type UserId = string;"
+      ]
+    },
+    {
+      "topic": "Record<K, V>",
+      "summary": "Utility type that generates an object type requiring exactly the keys in union K, each with value type V. Shorthand for manually writing out { key1: V; key2: V; ... }.",
+      "example": "type ServerOption = \"APP\" | \"DO\" | \"OVH\";\nconst serverDomains: Record<ServerOption, string> = {\n  APP: \"apps-hestiacp-fileharbor.hypetracker.org\",\n  DO: \"do-hestiacp-fileharbor.hypetracker.org\",\n  OVH: \"new-hestiacp-fileharbor.crmart.dev\"\n};",
+      "whyItMattersOverAPlainObject": "Record<K,V> stays LINKED to the union type K. If K gains a new member later and you forget to add the matching key to the Record-typed object, TS errors immediately ('Property missing'). A manually-typed object literal or an untyped/inferred object has NO such connection — it silently goes stale.",
+      "appliedRefactor": "Replaced a 3-case switch statement (which repeated the entire URL template 3 times) with one Record lookup (serverDomains[mySelectValue]) + a single template literal construction — single source of truth for the URL shape."
+    },
+    {
+      "topic": "Explicit function parameter and return types",
+      "summary": "Annotate function signatures explicitly, and use them as a forcing function to deduplicate near-identical functions.",
+      "example": "function copyToClipboard(text: string): void {\n  navigator.clipboard.writeText(text).then(...).catch(...);\n}",
+      "appliedRefactor": "3 near-duplicate copy-to-clipboard functions (copyIPClickListener, copyBtnClickListener, copyCdnBtnClickListener) reduced to thin wrappers that extract .innerText from their specific element and call the one shared copyToClipboard(text) function.",
+      "bonusFind": "Caught and fixed a variable-shadowing bug during the refactor — a local `const resultLink` inside one of the old functions was shadowing the outer `let resultLink` (which held the generated URL); renamed to resultLinkText."
+    },
+    {
+      "topic": "any vs unknown",
+      "summary": "Both mean 'could be any type', but they behave oppositely for safety.",
+      "any": "Disables type checking completely for that value. You can do ANYTHING with it (call missing methods, access missing properties) with zero compiler complaint, even if it will crash at runtime.",
+      "unknown": "Also means 'could be anything', but TS REFUSES to let you use any property/method on it until you narrow/prove its actual type first (e.g. with `instanceof`, `typeof`).",
+      "empiricalFinding": "Promise.prototype.catch()'s reject-callback parameter is typed `any` by TypeScript's standard lib (confirmed via editor hover) — NOT `unknown`. The `unknown` default only applies to synchronous try/catch blocks under `strict` mode, not to Promise .catch() callbacks.",
+      "safePattern": "let errText: string;\nif (err instanceof Error) {\n  errText = err.message;\n} else {\n  errText = \"Unknown error\";\n}\n// use errText afterwards, never the raw err",
+      "experimentProof": "With (err: any) [default], `err.message` compiled with ZERO warning even though err might not have .message. After annotating explicitly as (err: unknown), the same line failed to compile (ts(18046): 'err' is of type 'unknown') until wrapped in an `instanceof Error` check."
+    },
+    {
+      "topic": "Module system config gotcha (real runtime bug)",
+      "summary": "A plain browser <script> with no bundler and no import/export statements broke with `Uncaught ReferenceError: exports is not defined` after compiling.",
+      "rootCause": "tsconfig.json's default `\"moduleDetection\": \"force\"` forced TypeScript to treat the file as a module even without any import/export, and `\"module\": \"nodenext\"` resolved to CommonJS output (since package.json had no \"type\": \"module\"), so tsc injected Node.js-style module boilerplate (`Object.defineProperty(exports, ...)`) that doesn't exist in a browser.",
+      "fix": "Leave \"moduleDetection\" on its default \"auto\" (comment it out) so TS correctly detects the file has no import/export and treats it as a plain script — the \"module\" setting then becomes irrelevant for this file regardless of its value.",
+      "deprecationNote": "\"module\": \"none\" seemed like the semantically 'correct' explicit choice, but it is DEPRECATED and will be removed in TypeScript 7.0 — don't use it. The real fix was always about moduleDetection, not about which module value was chosen."
+    },
+    {
+      "topic": "Generated output files: declaration & sourceMap",
+      "summary": "tsc can generate extra files beyond the compiled .js depending on tsconfig options.",
+      "files": {
+        "scripts.d.ts + scripts.d.ts.map": "Generated by \"declaration\": true + \"declarationMap\": true. Contains only type signatures for other TS projects to import as a library. Since this script has zero exports, the file was always empty — disabled both options, since this project is not a reusable library.",
+        "scripts.js.map": "Generated by \"sourceMap\": true. Maps the compiled .js back to the original .ts source so browser DevTools can show/debug the original TypeScript file instead of the compiled JS. Purely a local development convenience; should never be uploaded to production. Disabled for this project to keep deploy simple."
+      },
+      "gotcha": "tsc never deletes stale output files from a previous config — after disabling declaration/declarationMap, the old scripts.d.ts and scripts.d.ts.map had to be deleted manually."
+    },
+    {
+      "topic": "Deployment checklist for a plain static TS-compiled site",
+      "filesToDeploy": ["index.html", "style.css", "scripts.js (the compiled output)", "icon.svg"],
+      "filesToNeverDeploy": ["scripts.ts", "node_modules/", "package.json", "package-lock.json", "tsconfig.json"],
+      "workflowReminder": "Editing scripts.ts or tsconfig.json has ZERO effect on a running Live Server / deployed page until `npm run build` re-runs — the server just serves whatever scripts.js already exists on disk. Always: edit → npm run build → refresh/redeploy.",
+      "futureIdea": "Consider `tsc --watch` later for auto-recompiling on save during local development."
+    }
+  ],
+  "mentorNotes": {
+    "teachingStyle": "Guided Socratic questions, learner writes all code himself, mentor never writes/edits the actual code.",
+    "commonSyntaxMistakes": [
+      "Placing `as Type` next to the variable name instead of right after the expression.",
+      "Writing a type on the right side of `=` instead of after `:` (e.g. trying `let x = Record<K,V>` instead of `let x: Record<K,V> = {...}`).",
+      "Taking meta-notation placeholders like `<domain>` (meaning 'fill in here') as literal syntax, leaving stray `<`/`>` characters in real code."
+    ],
+    "strengths": [
+      "Reasons well about real engineering trade-offs when given an explicit choice with consequences (e.g. chose `!` over `if...throw` specifically because it's a small personal project).",
+      "Independently caught a variable-shadowing bug during a refactor without being told."
+    ]
+  }
+}
