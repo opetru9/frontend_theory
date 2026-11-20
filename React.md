@@ -30,10 +30,13 @@ Diferitele etape prin care trece o componentă de la "montare", "actualizare" ș
 
 # Hooks
 * useState() - permite sa facem re-redenring componentei schimbint starea interna a componentei ,astfel facind pagina interactiva 
+- 
 
 * useEffect() - prelucreaza careva schimbari a componentei si depinde de array de dependente, daca:
-- useEffect( ()=>{}, [update]) - se efectuiaza cind se schimba update.
-- useEffect( ()=>{}, []) - se efectuiaza doar o data la montarea componentului.
+- useEffect( ()=>{}, [update]) - se efectuiaza cind se schimba update. - urmareste variabile
+- useEffect( ()=>{}, []) - se efectuiaza doar o data la montarea componentului. - urmareste componenta intreaga;
+aici daca adaugam return in useEffect , putem face o actiune la momentul disparitiei componentei , de ex sa eliminam careva
+ elemente , sa facem count 0 etc..
 - useEffect( ()=>{}) - se efectuiaza la fieacre re-rendering a paginiii.
 
 * useContext() - pentru a evita props drill-down , cind transmitem date direct catre componenta destinatara direct , fara intermediari care nu au nevoie de aceste date.

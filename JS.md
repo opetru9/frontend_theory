@@ -85,7 +85,7 @@
     * Dacă lucrați cu indici negativi sau dacă există posibilitatea ca primul argument să fie mai mare decât al doilea, slice() oferă mai multă flexibilitate.
     * Dacă doriți să vă asigurați că indicii sunt întotdeauna pozitivi și că rezultatul este întotdeauna consistent, substring() poate fi o opțiune mai sigură.
 - "hello".substring(2,5) - extrage caractere in baza indicilor / "llo" /. mai strict
-- "hello".split(",") or more rules writen using regex () vvv
+- "hello".split("") or more rules writen using regex () vvv - return array din elementele splitate [h,e,l,l,o]
 * regex - regular expersion  - Se folosește peste tot unde ai nevoie să CAUȚI, SEPARI, sau ÎNLOCUIEȘTI text bazat pe o FORMĂ, nu pe o valoare exactă cunoscută dinainte, nu-i specific JavaScript-ului — e un concept folosit în aproape orice limbaj de programare (Python, Java, etc.)
 ex: /[/n,]/+ -> separa dupa /n sau , chair daca sunt citeva la rind (+)
  / ... / - delimatatori
@@ -96,8 +96,11 @@ ex: /[/n,]/+ -> separa dupa /n sau , chair daca sunt citeva la rind (+)
 - "hello".trimEnd() - elimina spatiile goale doar la sfirsitul stringului 
 - "hello".trimStart() - elimina spatiile goale doar la inceputul stringului 
 - "hello".repeat(3) - / "hellohellohello"
-
-
+- "ello".padStart(5, "h") -> "hello" - completează cu caracterul dat ("h"), repetat, până string-ul atinge lungimea cerută (5).
+- "hell".padEnd(5, "o") -> "hello" - completează cu caracterul dat in dreapta, repetat, până string-ul atinge lungimea cerută, daca nu pui carcaterul se umple cu spatii.
+- new Date('2027-03-15T00:00:00Z').toLocaleString('en-US') -> "3/15/2027, 2:00:00 AM" - se poate de adaugat arumente  : 
+date.toLocaleString("en-US", { month: "short" }); - pentru a extrage doar o valoarile dorite
+- new Date('2027-03-15T00:00:00Z').toISOString() -> 2026-11-04T09:37:15.199Z -> un format standard de dată, același în toată lumea
 
 # metode Array
 - .forEach - se foloseste pentru a gasi un element anume din masiv sau pentru a primi oricare informatie depsre masiv, nu returneaza nimic
@@ -109,13 +112,15 @@ ex: /[/n,]/+ -> separa dupa /n sau , chair daca sunt citeva la rind (+)
 - .shift() - elimina primul element si il returneaza.
 - .unshift(element) - adauga element la inceputul masivului.
 - .slice(1,3) - returneaza o copie cu o segventa din masiv 
-- .join(", ") - uneste elementele masivului intrun string
+- .join(",") - uneste elementele masivului intrun string si divide elementele masivului prin argument la join
+   ->  ['01001', '00001', '10010'].join('') = '010010000110010'
 - .filter( x => x > 2) gaseste toate elementele care satiface conditiiei
-- .find( x => x > 2 ) returneaza primul element care satisface conditiiei
+- .find( x => x > 2 ) returneaza primul element care satisface conditiiei || undefined
 - .findIndex( x => x > 2 ) returneaza indexul primului element care satisface conditiiei
 - .some( x => x > 2) returneaza true daca gaseste un asa element
 - .every( x => x > 2) returneaza true daca toate elementele satisfac conditiiei
 - .includes (elementToFind, hisIndex)
+- .parseInt(text, baza) ->transformă un string într-un număr întreg; "baza" spune în ce sistem e scris textul (de la 2 la 36),default 10;
 
 ## Object
  let myObj = {a:1, b:2}
@@ -184,11 +189,16 @@ Un numar de principii care este binevetnit de respecat la schimbul de date intre
 - model client ( request ) - server ( response )
 - pentru a face un request la server folosim "url".
 - resursele sunt transportate in format JSON sau XML.
+
 - pentru schimbul de resurse se utilizeaza metode HTTP:
 1. GET
-2. POST - pentru a adauga o resursa noua
-3. PUT  - pentru a actualiza o resursa existenta
-4. DELETE
+2. HEAD - exact ca get doar ca fara body , avem doar heders si status 
+3. POST - pentru a adauga o resursa noua
+4. PUT  - pentru a actualiza o resursa existenta cu o noua versiune ,de-a intregul
+5. PATCH - pentru a actualiza un cimp dintr-o resursa existenta 
+6. OPTIONS - pentru a afla ce metode sunt permise
+7. DELETE
+
 - StateLess - serverul nu stie nimic despre requesturile anterioare , de aceia trebuie sa transmitem toate datele complete la fiecare request.(cind dam undo in browser doar trimitem ultimul requiest inca o data )
 - Cacheing - serverul ne poate spune sa bagam in cache un resurs pentru a nul cere de mai multe ori de ex o img.
 - STATUS CODES
@@ -247,8 +257,11 @@ function myScore(){
 
     return {addScore, decScore, getScore}
 }
-let myObj = myScore()
-myObj.addScore() // {score++}
+//myObj devine un obiect cu 3 key su 3 values unde vaklues sunt cele 3 functii din myScore care e rulata doar o data si pastreaza mereu-
+//-"score" in memorie pentru future usage de catre myObj:
+let myObj = myScore() // {addScore : addScore, decScore : decScore, getScore : getScore}
+
+myObj.addScore() // {score++} 
 myObj.decScore() // {score--}
 myObj.getScore() //  score
 myObj.score      // - error -
@@ -266,11 +279,10 @@ function outerFunction() {
     return innerFunction;
 }
 
-const closureInstance = outerFunction();
-
-closureInstance(); // Output: 1
-closureInstance(); // Output: 2
-closureInstance(); // Output: 3
+const closureInstance = outerFunction(); -> ruleaza si salveaza functia din return (innerFunction) ca valoarea variabilei.
+closureInstance() // Output: 1
+closureInstance() // Output: 2
+closureInstance() // Output: 3
 
 3. Modularitatea: Closure-urile ajută la crearea de cod modular și reutilizabil (componente in react).
 
@@ -379,7 +391,7 @@ window.location.search   // ?id=10
 window.location.hash     // #section1
 
 # Abstract class
-* clasa suprema care nu poati fi decalrat prin new ca usual clas , poate fi doar extinsa de alte clase , deci e desupra la un grup de clase si :
+* clasa suprema care nu poati fi decalrat prin new ca usual class , poate fi doar extinsa de alte clase , deci e desupra la un grup de clase si :
 1.nu poate fi folosită direct
 2.este făcută ca alte clase să o extindă
 3.poate impune reguli pentru clasele copil
@@ -398,10 +410,94 @@ window.location.hash     // #section1
 *  o funcție definită și apelată pe loc, nu memorată undeva ca să fie chemată mai târziu.
 * (function() { ... })() parantezele din jurul funcției o transformă în expresie, iar parantezele de la final o invocă imediat.
 
+# Bolb ( Binary Large Object ) 
+* used as language for csv and txt or pdf files
+* csvContent = '"domain,expirationDate,registrar\n\"example.com\",\"15 Mar 2027\",\"GoDaddy\"\n\"test.com\",\"01 Jan 2027\"'
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+
+// invisible a element auto click on it and auto download
+  const link = document.createElement("a");
+
+// stransforma obiectul bold intrun URL pentru a fi perceput de href corect, acum la click tiar afisa csvContent intrun tab
+  link.href = URL.createObjectURL(blob); -> "blob:http://localhost:5173/0716ecce-762f-4043-9bc5-bbd1fab133fa".
+
+// with atribute download the a element download the href link , not acces it as usual 
+  const filename = "my-csv"
+  link.setAttribute("download", filename);
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+# new TextDecoder() - traducere din bytes brute în text
+* Uint8Array(39) [100, 97, 116, 97, 58, 32, 123, 34, ...] --> "data: {\"type\":\"progress\",\"current\":1}\n\n"
+- const decoder = new TextDecoder();  --> return string
+* decoder.decode(example); - cind a vem toate datele de decodat dintr-un req
+* decoder.decode(value, { stream: true }); - cind avem chunks de date pe bucati , stram: true permite sa facem legatura dintre chunkuri si sa nu pierdem date si sensul lor , lipeste datele intrun raspuns complet unic , nu le ia aparte pe fiecare. 
+
+# JSON - folosit pentru conversie intre tipuri in JS
+* JSON.parse(string) -> transforma string intrun obj
+* JSON.stringify(obj) -> din obj face json
+
+# Cookie
+document.cookie -> returneaza un string in care va fi toate cookies ( "a=1; b=2; c=3" )
+*  SET:
+document.cookie = test_cookie_key_name + "=" + encodeURIComponent(value) + "; max-age=31536000;path=/; SameSite=Lax"; -> name=value;atribut
+- max-age=31536000 -> expira in 365 zile 
+- path=/           -> valabil tot situl 
+- SameSite=Lax     -> paote sa fie " strict , lax say none " in baza la nivelul de securitate care il doresti 
+
+*  GET:
+document.cookie.match(name=value) - returneaza un array in care primul element e totul iar al doilea element e ce a facut match in celalte grupuri de paranteze regex 
+
+# await Promise.all(promises)
+1. Toate reușesc → se rezolvă cu un array de rezultate, în ordinea originală (am arătat mai devreme).
+2. UNA singură eșuează (reject) → Promise.all respinge IMEDIAT, cu motivul acelei promisiuni care a eșuat - fără să mai aștepte restul. Am testat:
+
+# Error Class
+class Error {
+    constructor(message){
+        this.name = 'Error';
+        this.message = message;
+        this.stack = '...where the err was created...';
+    }
+}
+let exampleError = new Error("some err text")
+exampleError.message = "some err text"
+
+# Custom Error Class
+class CustomError extends Error{
+    constructor(a, b, c){
+        super() --> super calls the constructor of parent class ( Error ) and add this arguments (name, message, stack) here
+        this.a = ..
+        this.b = ..
+    }
+     
+    get isAuth() { --> is a getter function e.isAuth , no need e.isAuth() to call it 
+        return this.status === 401 || this.codes.some(c => [6003, 6103, 9103, 9106, 9107, 10000].includes(c)); --> return true or false 
+    }
+}
+
+* real ex: 
+    constructor(method, path, status, errors = []) {
+        const detail = errors.map(e => `[${e.code}] ${e.message}`).join('; ');
+        super(`${method} ${path} → HTTP ${status}${detail ? ` ${detail}` : ''}`); -> so thsi.messsage = `${method} ${path}...`
+        this.status = status;
+        this.codes = errors.map(e => e.code);
+  }
+  
+# new Map()
+- like an object but with preseted methods :
+.set(key, value)
+.get(key)
+.has(key)
+.size()
+
 # new Set() 
-* o colectie de date unice in js , vine din js , e similar cu array doar ca daca adaogi acelasi valori ele se suprascriu si in final nu ai dublicate
-* 
-.add(valoare) — adaugă o valoare
+- o colectie de date unice in js , vine din js , e similar cu array doar ca daca adaogi acelasi valori ele se suprascriu si in final nu ai dublicate;
+.add(valoare) — adaugă o valoare 
 .has(valoare) — verifică dacă există deja
 .size — câte elemente unice conține (proprietate, nu metodă)
 
+# metode regex
+1. regex.test(string) - return true or false daca trece regex , primeste un string sau orice returneaza un string

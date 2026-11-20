@@ -23,7 +23,10 @@
   }; -> punem valori daca ulterior vom folosi record unde se vor folosi vaolile la fiecare key 
 
 
-4. Record: ne permite sa avem o sintaxa mai scurta sa nu copiem text in plus :
+4. Record: ne permite sa avem o sintaxa mai scurta pentru a declara obiecte si tipul din ele:
+* Record<K, V> - un obiect, cu 2 "sloturi": primul (K) = tipul CHEILOR, al doilea (V) = tipul VALORILOR. Construiește: "obiect unde orice cheie e de tip K, orice valoare e de tip V".
+Record<string, string> → K=string, V=string → "obiect cu chei text, valori text".
+
 type ServerOption = "APP" | "DO" | "OVH";
 Record<ServerOption, string> === { APP: string; DO: string; OVH: string }
 
@@ -62,3 +65,6 @@ if (!card) {
 
 # unknown 
 "nu știu încă ce e asta" — dar, spre deosebire de any, nu ai voie să faci nimic cu ea până nu dovedești ce e (cu instanceof, typeof, etc.). E "necunoscut, dar protejat".
+
+# interface 
+interface - îi dă un nume unei forme de obiect, ca s-o poți refolosi scriind doar numele, nu toată forma din nou ,Dacă ai nevoie de ACEEAȘI formă în mai multe locuri din cod, ar fi enervant s-o rescrii de fiecare dată. interface e doar un NUME pe care-l dai acelei forme, o singură dată:
